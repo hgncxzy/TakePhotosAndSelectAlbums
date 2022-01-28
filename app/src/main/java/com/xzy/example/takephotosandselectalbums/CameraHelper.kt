@@ -2,15 +2,20 @@ package com.xzy.example.takephotosandselectalbums
 
 import android.app.Activity
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import androidx.core.os.EnvironmentCompat
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -74,6 +79,44 @@ object CameraHelper {
                 }
             }
         }
+    }
+
+
+    /**
+     * 生成 bitmap,处理压缩，避免 OOM
+     * */
+    fun createBitmap(context: Context): Bitmap? {
+        val options: BitmapFactory.Options = BitmapFactory.Options()
+        var byteArrayOutputStream: ByteArrayOutputStream? = null
+        var inputStream: InputStream? = null
+        // 读取图片，此方法只有读取功能，没有缓存
+        options.inJustDecodeBounds = true
+        // 缩放的倍率
+        options.inSampleSize = 1
+        options.inPreferredConfig = Bitmap.Config.RGB_565
+        options.inJustDecodeBounds = false
+        val bitmap = if (isAndroidQ) {
+            // Android 10 使用图片uri 加载
+            inputStream = context.contentResolver.openInputStream(mCameraUri!!)
+            BitmapFactory.decodeStream(inputStream, null, options)
+        } else {
+            // 使用图片路径加载
+            BitmapFactory.decodeFile(mCameraImagePath, options)
+        }
+        byteArrayOutputStream = ByteArrayOutputStream()
+        bitmap?.compress(Bitmap.CompressFormat.JPEG, 40, byteArrayOutputStream)
+        try {
+            inputStream?.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            try {
+                byteArrayOutputStream.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        return bitmap
     }
 
     /**

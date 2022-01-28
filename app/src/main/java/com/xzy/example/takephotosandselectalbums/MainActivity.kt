@@ -121,37 +121,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 if (hasSdcard()) {
                     // 点击了确定
                     if (resultCode == RESULT_OK) {
-                        val options: BitmapFactory.Options = BitmapFactory.Options()
-                        var baos: ByteArrayOutputStream? = null
-                        var inputStream: InputStream? = null
-                        // 读取图片，此方法只有读取功能，没有缓存
-                        options.inJustDecodeBounds = true
-                        // 缩放的倍率
-                        options.inSampleSize = 1
-                        options.inPreferredConfig = Bitmap.Config.RGB_565
-                        options.inJustDecodeBounds = false
-                        bitmap = if (isAndroidQ) {
-                            // Android 10 使用图片uri 加载
-                            inputStream = contentResolver.openInputStream(mCameraUri!!)
-                            BitmapFactory.decodeStream(inputStream, null, options)
-                        } else {
-                            // 使用图片路径加载
-                            BitmapFactory.decodeFile(mCameraImagePath, options)
-                        }
-                        baos = ByteArrayOutputStream()
-                        bitmap?.compress(Bitmap.CompressFormat.JPEG, 40, baos)
+                        bitmap = CameraHelper.createBitmap(this)
                         imageView?.setImageBitmap(bitmap)
-                        try {
-                            inputStream?.close()
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        } finally {
-                            try {
-                                baos.close()
-                            } catch (e: IOException) {
-                                e.printStackTrace()
-                            }
-                        }
                     } else {
                         // 点击了取消
                         Toast.makeText(this, "Cancel", Toast.LENGTH_SHORT).show()
