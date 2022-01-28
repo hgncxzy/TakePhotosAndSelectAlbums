@@ -21,6 +21,9 @@ import com.xzy.example.takephotosandselectalbums.PermissionHelper.checkCameraPer
 import com.xzy.example.takephotosandselectalbums.PermissionHelper.checkStoragePermission
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private var intentType = 0
@@ -118,18 +121,37 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 if (hasSdcard()) {
                     // 点击了确定
                     if (resultCode == RESULT_OK) {
+                        val options: BitmapFactory.Options = BitmapFactory.Options()
+                        var baos: ByteArrayOutputStream? = null
+                        var inputStream: InputStream? = null
+                        // 读取图片，此方法只有读取功能，没有缓存
+                        options.inJustDecodeBounds = true
+                        // 缩放的倍率
+                        options.inSampleSize = 1
+                        options.inPreferredConfig = Bitmap.Config.RGB_565
+                        options.inJustDecodeBounds = false
                         bitmap = if (isAndroidQ) {
                             // Android 10 使用图片uri 加载
-                            BitmapFactory.decodeStream(
-                                contentResolver.openInputStream(
-                                    mCameraUri!!
-                                )
-                            )
+                            inputStream = contentResolver.openInputStream(mCameraUri!!)
+                            BitmapFactory.decodeStream(inputStream, null, options)
                         } else {
                             // 使用图片路径加载
-                            BitmapFactory.decodeFile(mCameraImagePath)
+                            BitmapFactory.decodeFile(mCameraImagePath, options)
                         }
+                        baos = ByteArrayOutputStream()
+                        bitmap?.compress(Bitmap.CompressFormat.JPEG, 40, baos)
                         imageView?.setImageBitmap(bitmap)
+                        try {
+                            inputStream?.close()
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        } finally {
+                            try {
+                                baos.close()
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
                     } else {
                         // 点击了取消
                         Toast.makeText(this, "Cancel", Toast.LENGTH_SHORT).show()
